@@ -1,0 +1,65 @@
+FROM ubuntu:precise
+MAINTAINER cloudtestingntut@gmail.com
+ENV HOME /root
+RUN apt-get -y update
+RUN apt-get -y install nano
+RUN apt-get -y install curl
+RUN apt-get -y install unzip
+RUN apt-get -y install wget
+RUN apt-get -y install iputils-ping
+RUN apt-get -y install software-properties-common python-software-properties
+RUN add-apt-repository ppa:git-core/ppa
+RUN apt-get -y install git
+RUN apt-get -y install openssh-server
+RUN apt-get -y install python-pip
+RUN mkdir -p /var/run/sshd
+RUN echo "${user}:${set_pwd}" | chpasswd
+RUN mkdir /root/ctp-tools
+RUN wget http://${ip}/ffmpeg && mv ffmpeg /root/ctp-tools
+RUN chmod -R 755 /root/ctp-tools
+RUN curl -O http://${ip}/JCIS_IntegrationStation.zip
+RUN mkdir /root/JCIS_IntegrationStation
+RUN unzip JCIS_IntegrationStation.zip -d /root/JCIS_IntegrationStation
+RUN chmod -R 755 /root/JCIS_IntegrationStation
+RUN echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections 
+RUN add-apt-repository -y ppa:webupd8team/java
+RUN apt-get -y update
+RUN apt-get -y install oracle-java7-installer
+RUN apt-get -y install software-properties-common
+ENV JAVA_HOME /usr/lib/jvm/java-7-oracle
+ENV PATH $PATH:$JAVA_HOME/bin
+RUN pip install uiautomator==0.1.34
+RUN pip install robotframework
+RUN pip install robotframework-uiautomatorlibrary
+RUN ln -s /usr/local/bin/pybot /usr/bin/pybot
+RUN echo 'export PYTHON_HOME="/usr/"' >> ${HOME}/.profile
+RUN echo 'export PATH=${PATH}:$PYTHON_HOME' >> ${HOME}/.profile
+RUN mkdir /root/android-cts
+RUN curl -O http://${ip}/android-cts-4.2_r4-linux_x86-arm.zip
+RUN mkdir /root/android-cts/4.2
+RUN unzip android-cts-4.2_r4-linux_x86-arm.zip -d /root/android-cts/4.2
+RUN chmod -R 755 /root/android-cts
+RUN find /root/android-cts -type d -exec chown root:root {} \;
+RUN find /root/android-cts -type f -exec chown root:root {} \;
+RUN find /root/android-cts -type d -exec chmod 755 {} \;
+RUN find /root/android-cts -type f -exec chmod 755 {} \;
+ENV CTS_HOME /root/android-cts
+ENV PATH $PATH:$CTS_HOME
+RUN echo 'export CTS_HOME="/root/android-cts"' >> ${HOME}/.profile
+RUN echo 'export PATH=${PATH}:$CTS_HOME' >> ${HOME}/.profile
+RUN apt-get -y update
+RUN apt-get -y install ia32-libs
+ENV ANDROID_SDK_VERSION r24.2
+ENV ANDROID_BUILD_TOOLS_VERSION 21.1.1
+ENV ANDROID_API_LEVELS android-17
+ENV PATH ${PATH}:/root/android-sdk-linux/tools:/root/android-sdk-linux/platform-tools
+RUN wget -qO- "http://dl.google.com/android/android-sdk_${ANDROID_SDK_VERSION}-linux.tgz" \ 
+| tar -zxv -C ${HOME} && \ 
+echo y | android update sdk --no-ui --all --filter tools,platform-tool,${ANDROID_API_LEVELS},build-tools-${ANDROID_BUILD_TOOLS_VERSION}
+RUN echo 'export ANDROID_SDK="/root/android-sdk-linux"' >> ${HOME}/.profile
+RUN echo 'export ANDROID_HOME="/root/android-sdk-linux"' >> ${HOME}/.profile
+RUN echo 'export SDK_ROOT="/root/android-sdk-linux"' >> ${HOME}/.profile
+ENV PATH ${PATH}:/root/android-sdk-linux/tools:/root/android-sdk-linux/platform-tools
+RUN echo 'export PATH=${PATH}:/root/android-sdk-linux/tools:/root/android-sdk-linux/platform-tools:/root/ctp-tools' >> ${HOME}/.profile
+EXPOSE 22
+ENTRYPOINT /usr/sbin/sshd -D
